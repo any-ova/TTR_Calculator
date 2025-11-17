@@ -1,75 +1,67 @@
-// Используем обновлённый api.fetchBooks (с хорошим моком)
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Row, Col, Form, Button, InputGroup } from 'react-bootstrap';
 import { fetchBooks } from '../services/api';
-import { Book } from '../types';
+import BookCard from '../components/BookCard';
 
-const BooksPage: React.FC = () => {
-    const [books, setBooks] = useState<Book[]>([]);
-    const [search, setSearch] = useState('');
+const Books: React.FC = () => {
+    const [title, setTitle] = useState('');
+    const [author, setAuthor] = useState('');
+    const [items, setItems] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        load();
+    const load = useCallback(async (params = {}) => {
+        setLoading(true);
+        try {
+            const res = await fetchBooks(params as any);
+            setItems(res || []);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    async function load(query?: string) {
-        const params: Record<string, string | undefined> = {};
-        if (query) params.title = query;
-        const res = await fetchBooks(params);
-        setBooks(res);
-    }
+    useEffect(() => { load(); }, [load]);
 
-    const onSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        load(search || undefined);
+    const apply = (e?: React.FormEvent) => {
+        e?.preventDefault();
+        const params: Record<string, string | number | undefined> = {
+            title: title || undefined,
+            author: author || undefined,
+        };
+        load(params);
+    };
+
+    const reset = () => {
+        setTitle(''); setAuthor('');
+        load();
     };
 
     return (
         <>
-            <h1 className="page-title">Книги</h1>
-            <div className="search-container-wrapper">
-                <form className="search-form" onSubmit={onSearch}>
-                    <div className="search-container">
-                        <input type="text" name="search" placeholder="Поиск автора" value={search} onChange={(e) => setSearch(e.target.value)} className="search-input" />
-                        <button type="submit" className="search-button">🔍</button>
-                    </div>
-                </form>
-            </div>
+            <h1 className="page-title">Книги / Услуги</h1>
+
+            <Form onSubmit={apply} className="mb-3">
+                <Row className="g-2 align-items-center">
+                    <Col md={3}><Form.Control placeholder="Название" value={title} onChange={e => setTitle(e.target.value)} /></Col>
+                    <Col md={2}><Form.Control placeholder="Автор" value={author} onChange={e => setAuthor(e.target.value)} /></Col>
+                </Row>
+                <Row className="mt-2">
+                    <Col><Button type="submit" >Применить</Button> <Button variant="outline-secondary" onClick={reset} className="ms-2">Сброс</Button></Col>
+                </Row>
+            </Form>
+
+            {loading && <div>Загрузка...</div>}
 
             <div className="books-container">
-                {books.length ? books.map((b) => (
-                    <div className="book" key={b.ID}>
-                        <a href={`/book/${b.ID}`} className="book-link">
-                            <div className="card-content">
-                                <img src={b.ImageURL || '/img/default-service.png'} alt={b.Title} />
-                                <p className="card-label">{b.Title}</p>
-                                <p className="card-label-au">{b.Author}</p>
-                                <p className="card-label">Количество уникальных слов</p>
-                                <p className="uniq-num-label">{b.UniqueWords}</p>
-                                <p className="card-label">Количество слов</p>
-                                <p className="uniq-num-label">{b.Words}</p>
-                            </div>
-                        </a>
-
-                        <form action="/add-to-cart" method="POST" style={{ marginTop: 10, textAlign: 'center' }}>
-                            <input type="hidden" name="book_id" value={b.ID} />
-                            <input type="hidden" name="comment" value="Добавлено в заявку" />
-                            <button type="submit" className="add-to-cart-btn">Добавить в заявку</button>
-                        </form>
-
-                        <form action="/delete-book" method="POST" style={{ marginTop: 5, textAlign: 'center' }}>
-                            <input type="hidden" name="book_id" value={b.ID} />
-                            <button type="submit" className="delete-btn">Удалить</button>
-                        </form>
-                    </div>
+                {items.length ? items.map((it: any) => (
+                    <BookCard key={it.ID ?? it.id} service={it} />
                 )) : (
-                    <>
-                        <p style={{ gridColumn: '1 / -1', textAlign: 'center', fontSize: '1.5rem', margin: '2rem 0', color: '#777' }}>Книги не найдены</p>
-                        <p style={{ gridColumn: '1 / -1', textAlign: 'center', fontSize: '1.3rem' }}>Проверьте подключение к репозиторию</p>
-                    </>
+                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem 0', color: '#777' }}>
+                        Результатов нет
+                    </div>
                 )}
             </div>
         </>
     );
 };
 
-export default BooksPage;
+export default Books;

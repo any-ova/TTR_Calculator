@@ -9,7 +9,6 @@ export type BookFromApi = {
     image_url?: string;
 };
 
-// Объект в формате, который ожидает верстка (ID, Title, Author, ImageURL, UniqueWords, Words)
 export type Book = {
     ID: string;
     Title: string;

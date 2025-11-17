@@ -1,4 +1,3 @@
-// src/components/CartBubble.tsx
 import React, { useEffect, useState } from 'react';
 import { fetchCartIcon } from '../services/api';
 

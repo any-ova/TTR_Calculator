@@ -6,6 +6,14 @@ const MINIO_BASE = ((import.meta.env.VITE_MINIO_BASE as string) || '').replace(/
 const FORCE_MOCK = (import.meta.env.VITE_FORCE_MOCK as string) === 'true';
 const DEFAULT_IMG = '/img/default-service.png';
 
+function pick(obj: any, ...keys: string[]) {
+    if (!obj) return undefined;
+    for (const k of keys) {
+        if (Object.prototype.hasOwnProperty.call(obj, k) && obj[k] !== undefined && obj[k] !== null) return obj[k];
+    }
+    return undefined;
+}
+
 export type TemplateBook = {
     ID: string;
     Title: string;
@@ -19,28 +27,14 @@ export type TemplateBook = {
     DateTo?: string | null;
 };
 
-export type CartIcon = { cartCount: number; draftId: string | null; };
-export type OrderBookItem = { order_id: number; book_id: number; comment?: string; book: TemplateBook };
-export type OrderResponse = { order?: Record<string, any>; books?: OrderBookItem[] };
-
-function pick(obj: any, ...keys: string[]) {
-    if (!obj) return undefined;
-    for (const k of keys) {
-        if (Object.prototype.hasOwnProperty.call(obj, k) && obj[k] !== undefined && obj[k] !== null) return obj[k];
-    }
-    return undefined;
-}
-
 function mapApiBook(b: any): TemplateBook {
-    if (!b) {
-        return { ID: '', Title: 'Без названия', ImageURL: DEFAULT_IMG };
-    }
+    if (!b) return { ID: '', Title: 'Без названия', ImageURL: DEFAULT_IMG };
 
     const id = String(pick(b, 'id', 'ID') ?? '');
     const title = String(pick(b, 'title', 'Title') ?? '');
     const author = String(pick(b, 'author', 'Author') ?? '');
     const description = String(pick(b, 'description', 'Description') ?? '');
-    const uniqueWords = Number(pick(b, 'unique_words', 'UniqueWords', 'uniqueWords') ?? 0);
+    const uniqueWords = Number(pick(b, 'unique_words', 'UniqueWords') ?? 0);
     const words = Number(pick(b, 'words', 'Words') ?? 0);
     const priceRaw = pick(b, 'price', 'Price');
     const price = priceRaw !== undefined && priceRaw !== null ? Number(priceRaw) : null;
@@ -48,15 +42,13 @@ function mapApiBook(b: any): TemplateBook {
     const dateTo = pick(b, 'date_to', 'DateTo', 'to') ?? null;
 
     const imageUrl = pick(b, 'image_url', 'ImageURL', 'imageUrl');
-    const imageName = pick(b, 'image_name', 'ImageName', 'image_name', 'Image') ?? pick(b, 'image', 'image');
+    const imageName = pick(b, 'image_name', 'ImageName', 'image') ?? pick(b, 'ImageName', 'image');
 
     let image = DEFAULT_IMG;
-    if (imageUrl) {
-        image = String(imageUrl);
-    } else if (imageName && MINIO_BASE) {
-        image = `${MINIO_BASE}/${String(imageName).replace(/^\//, '')}`;
-    } else if (imageName) {
-        image = String(imageName);
+    if (imageUrl) image = String(imageUrl);
+    else if (imageName) {
+        if (MINIO_BASE) image = `${MINIO_BASE}/${String(imageName).replace(/^\//, '')}`;
+        else image = String(imageName);
     }
 
     return {
@@ -81,7 +73,6 @@ function buildUrl(path: string, params: Record<string, string | number | undefin
     return u.toString();
 }
 
-// auth header helper (optional)
 function authHeaders(): Headers {
     const headers = new Headers({ Accept: 'application/json' });
     const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
@@ -89,6 +80,7 @@ function authHeaders(): Headers {
     return headers;
 }
 
+// fetchBooks: passes through title, author, from/to, minPrice/maxPrice, handle
 export async function fetchBooks(params: {
     title?: string;
     author?: string;
@@ -110,14 +102,16 @@ export async function fetchBooks(params: {
             maxPrice: params.maxPrice,
             handle: params.handle,
         });
-        const res = await fetch(url, { headers: authHeaders() });
+        const res = await fetch(url, { headers: authHeaders(), credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const arr = Array.isArray(data) ? data : data.items ?? data;
         return arr.map(mapApiBook);
     } catch (err) {
-        console.warn('fetchBooks fallback to mock', err);
-        return MOCK_BOOKS.map(mapApiBook);
+        console.warn('fetchBooks failed, fallback to mock only if FORCE_MOCK:', err);
+        // only return mock if FORCE_MOCK, otherwise return empty array to show "no data / error" in UI
+        if (FORCE_MOCK) return MOCK_BOOKS.map(mapApiBook);
+        return [];
     }
 }
 
@@ -127,15 +121,14 @@ export async function fetchBook(id: string): Promise<TemplateBook | null> {
         return found ? mapApiBook(found) : null;
     }
     try {
-        const res = await fetch(`${API_BASE}/books/${id}`, { headers: authHeaders() });
+        const res = await fetch(`${API_BASE}/books/${id}`, { headers: authHeaders(), credentials: 'include' });
         if (res.status === 404) return null;
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         return mapApiBook(data);
     } catch (err) {
-        console.warn('fetchBook fallback to mock', err);
-        const found = MOCK_BOOKS.find(b => String(pick(b, 'id')) === String(id));
-        return found ? mapApiBook(found) : null;
+        console.warn('fetchBook failed', err);
+        return null; // do NOT fallback automatically to mock
     }
 }
 
@@ -143,19 +136,31 @@ export async function fetchCartIcon(): Promise<CartIcon> {
     if (FORCE_MOCK) return { cartCount: MOCK_CART.cartCount, draftId: MOCK_CART.draftId };
     try {
         const res = await fetch(`${API_BASE}/ttr-calculation/cart-icon`, { headers: authHeaders(), credentials: 'include' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+            // If unauthorized or forbidden — treat as empty cart for guest
+            if (res.status === 401 || res.status === 403) return { cartCount: 0, draftId: null };
+            throw new Error(`HTTP ${res.status}`);
+        }
         const data = await res.json();
         const count = Number(pick(data, 'count', 'Count', 'cart_count', 'cartCount') ?? 0);
         const draftId = pick(data, 'order_id', 'orderId', 'draft_id', 'draftId') ?? null;
         return { cartCount: count, draftId: draftId !== null ? String(draftId) : null };
     } catch (err) {
-        console.warn('fetchCartIcon fallback to mock', err);
-        return { cartCount: MOCK_CART.cartCount, draftId: MOCK_CART.draftId };
+        console.warn('fetchCartIcon failed', err);
+        // if FORCE_MOCK true, return mock, otherwise return empty cart (don't show mock)
+        if (FORCE_MOCK) return { cartCount: MOCK_CART.cartCount, draftId: MOCK_CART.draftId };
+        return { cartCount: 0, draftId: null };
     }
 }
 
 export async function fetchOrder(id: string): Promise<OrderResponse | null> {
     if (FORCE_MOCK) return MOCK_ORDER as any;
+    // backend expects numeric id; validate
+    if (!/^\d+$/.test(id)) {
+        // id not numeric — don't call backend; return null so UI can show message
+        console.warn('fetchOrder: id is not numeric, skipping backend call:', id);
+        return null;
+    }
     try {
         const res = await fetch(`${API_BASE}/ttr-calculation/${id}`, { headers: authHeaders(), credentials: 'include' });
         if (!res.ok) {
@@ -168,11 +173,12 @@ export async function fetchOrder(id: string): Promise<OrderResponse | null> {
         }
         return data as OrderResponse;
     } catch (err) {
-        console.warn('fetchOrder fallback to mock', err);
-        return MOCK_ORDER as any;
+        console.warn('fetchOrder failed', err);
+        return null;
     }
 }
 
+// addBookToCart and other actions keep previous behavior (throw on error / use credentials)
 export async function addBookToCart(bookId: number, comment?: string) {
     if (FORCE_MOCK) return { order_id: MOCK_CART.draftId ?? null, book_id: bookId };
     const res = await fetch(`${API_BASE}/ttr-calculation/cart/books`, {
@@ -184,5 +190,3 @@ export async function addBookToCart(bookId: number, comment?: string) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
 }
-
-// other order helpers omitted for brevity — implement similarly (updateBookInOrder, removeBookFromOrder, updateOrderTitle, submitOrder, deleteOrder)

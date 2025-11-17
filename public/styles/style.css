@@ -566,3 +566,31 @@ body {
 header .bubble-btn, header .bubble-btn.disabled {
     display: none;
 }
+.order-header, .order-item {
+    display: grid;
+    grid-template-columns: 1fr 120px 120px 180px 1fr 120px;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* Make textarea in comment wider */
+.order-item .comment-section textarea {
+    width: 100%;
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* Ensure cards keep consistent min-width */
+.books-container .book {
+    max-width: 28rem;
+    margin: 0;
+}
+/* Order page improvements */
+.order-stats-table td { padding: 0.6rem 1rem; }
+.table td, .table th { vertical-align: middle; }
+textarea { min-height: 80px; resize: vertical; }
+/* ensure container-wrapper top padding so header doesn't overlap content */
+.container-wrapper { padding-top: 2.5rem; }
+/* bubble centering (если нужно) */
+.bubble-btn { display: flex !important; align-items: center !important; justify-content: center !important; }
+

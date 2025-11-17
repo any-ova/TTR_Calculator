@@ -1,28 +1,35 @@
 import React from 'react';
-import { TemplateBook } from '../services/api';
+import { Link } from 'react-router-dom';
+import getImageUrl from '../services/image';
 
-const BookCard: React.FC<{ book: TemplateBook }> = ({ book }) => {
+const DEFAULT = '/img/default-service.png';
+
+const BookCard: React.FC<{ service: any }> = ({ service }) => {
+    const title = service.Title ?? service.title ?? 'Без названия';
+    const author = service.Author ?? service.author ?? '';
+    const image = getImageUrl(service) || DEFAULT;
+    const unique = service.UniqueWords ?? service.unique_words ?? 0;
+    const words = service.Words ?? service.words ?? 0;
+    const id = service.ID ?? service.id ?? '';
+
     return (
-        <div className="book">
-            <a href={`/book/${book.ID}`} className="book-link">
+        <div className="books" style={{ boxSizing: 'border-box' }}>
+            <Link to={`/books/${id}`} className="book-link">
                 <div className="card-content">
-                    <img src={book.ImageURL || '/img/default-service.png'} alt={book.Title} />
-                    <p className="card-label">{book.Title}</p>
-                    <p className="card-label-au">{book.Author}</p>
+                    <img src={image} alt={title} />
+                    <p className="card-label">{title}</p>
+                    <p className="card-label-au">{author}</p>
                     <p className="card-label">Количество уникальных слов</p>
-                    <p className="uniq-num-label">{book.UniqueWords}</p>
+                    <p className="uniq-num-label">{unique}</p>
                     <p className="card-label">Количество слов</p>
-                    <p className="uniq-num-label">{book.Words}</p>
+                    <p className="uniq-num-label">{words}</p>
                 </div>
-            </a>
+            </Link>
+
             <form action="/add-to-cart" method="POST" style={{ marginTop: 10, textAlign: 'center' }}>
-                <input type="hidden" name="book_id" value={book.ID} />
+                <input type="hidden" name="book_id" value={id} />
                 <input type="hidden" name="comment" value="Добавлено в заявку" />
                 <button type="submit" className="add-to-cart-btn">Добавить в заявку</button>
-            </form>
-            <form action="/delete-book" method="POST" style={{ marginTop: 5, textAlign: 'center' }}>
-                <input type="hidden" name="book_id" value={book.ID} />
-                <button type="submit" className="delete-btn">Удалить</button>
             </form>
         </div>
     );
