@@ -1,4 +1,3 @@
-// src/services/api.ts
 import { MOCK_BOOKS, MOCK_CART, MOCK_ORDER } from './mock';
 
 const API_BASE = (import.meta.env.VITE_API_BASE as string) || '/api';
@@ -80,7 +79,40 @@ function authHeaders(): Headers {
     return headers;
 }
 
-// fetchBooks: passes through title, author, from/to, minPrice/maxPrice, handle
+async function isBackendReachable(): Promise<boolean> {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 секунд таймаут
+
+        const res = await fetch(`${API_BASE}/books?limit=1`, {
+            method: 'GET',
+            signal: controller.signal,
+            headers: authHeaders()
+        });
+
+        clearTimeout(timeoutId);
+        return res.ok || res.status === 401 || res.status === 403;
+    } catch (err) {
+        console.warn('Backend reachability check failed:', err);
+        return false;
+    }
+}
+
+let backendStatusCache: { status: boolean; timestamp: number } | null = null;
+const BACKEND_STATUS_CACHE_DURATION = 30000; // 30 секунд
+
+async function getBackendStatus(): Promise<boolean> {
+    const now = Date.now();
+
+    if (backendStatusCache && (now - backendStatusCache.timestamp < BACKEND_STATUS_CACHE_DURATION)) {
+        return backendStatusCache.status;
+    }
+
+    const status = await isBackendReachable();
+    backendStatusCache = { status, timestamp: now };
+    return status;
+}
+
 export async function fetchBooks(params: {
     title?: string;
     author?: string;
@@ -108,9 +140,15 @@ export async function fetchBooks(params: {
         const arr = Array.isArray(data) ? data : data.items ?? data;
         return arr.map(mapApiBook);
     } catch (err) {
-        console.warn('fetchBooks failed, fallback to mock only if FORCE_MOCK:', err);
-        // only return mock if FORCE_MOCK, otherwise return empty array to show "no data / error" in UI
-        if (FORCE_MOCK) return MOCK_BOOKS.map(mapApiBook);
+        console.warn('fetchBooks failed, attempting fallback to mock:', err);
+
+        const isReachable = await getBackendStatus();
+        if (!isReachable) {
+            console.info('Backend is unreachable, using mock data for fetchBooks');
+            return MOCK_BOOKS.map(mapApiBook);
+        }
+
+        console.warn('fetchBooks failed but backend is reachable, returning empty array');
         return [];
     }
 }
@@ -120,6 +158,7 @@ export async function fetchBook(id: string): Promise<TemplateBook | null> {
         const found = MOCK_BOOKS.find(b => String(pick(b, 'id')) === String(id));
         return found ? mapApiBook(found) : null;
     }
+
     try {
         const res = await fetch(`${API_BASE}/books/${id}`, { headers: authHeaders(), credentials: 'include' });
         if (res.status === 404) return null;
@@ -128,16 +167,24 @@ export async function fetchBook(id: string): Promise<TemplateBook | null> {
         return mapApiBook(data);
     } catch (err) {
         console.warn('fetchBook failed', err);
-        return null; // do NOT fallback automatically to mock
+
+        const isReachable = await getBackendStatus();
+        if (!isReachable) {
+            console.info('Backend is unreachable, using mock data for fetchBook');
+            const found = MOCK_BOOKS.find(b => String(pick(b, 'id')) === String(id));
+            return found ? mapApiBook(found) : null;
+        }
+
+        return null;
     }
 }
 
 export async function fetchCartIcon(): Promise<CartIcon> {
     if (FORCE_MOCK) return { cartCount: MOCK_CART.cartCount, draftId: MOCK_CART.draftId };
+
     try {
         const res = await fetch(`${API_BASE}/ttr-calculation/cart-icon`, { headers: authHeaders(), credentials: 'include' });
         if (!res.ok) {
-            // If unauthorized or forbidden — treat as empty cart for guest
             if (res.status === 401 || res.status === 403) return { cartCount: 0, draftId: null };
             throw new Error(`HTTP ${res.status}`);
         }
@@ -147,20 +194,25 @@ export async function fetchCartIcon(): Promise<CartIcon> {
         return { cartCount: count, draftId: draftId !== null ? String(draftId) : null };
     } catch (err) {
         console.warn('fetchCartIcon failed', err);
-        // if FORCE_MOCK true, return mock, otherwise return empty cart (don't show mock)
-        if (FORCE_MOCK) return { cartCount: MOCK_CART.cartCount, draftId: MOCK_CART.draftId };
+
+        const isReachable = await getBackendStatus();
+        if (!isReachable) {
+            console.info('Backend is unreachable, using mock data for fetchCartIcon');
+            return { cartCount: MOCK_CART.cartCount, draftId: MOCK_CART.draftId };
+        }
+
         return { cartCount: 0, draftId: null };
     }
 }
 
 export async function fetchOrder(id: string): Promise<OrderResponse | null> {
     if (FORCE_MOCK) return MOCK_ORDER as any;
-    // backend expects numeric id; validate
+
     if (!/^\d+$/.test(id)) {
-        // id not numeric — don't call backend; return null so UI can show message
         console.warn('fetchOrder: id is not numeric, skipping backend call:', id);
         return null;
     }
+
     try {
         const res = await fetch(`${API_BASE}/ttr-calculation/${id}`, { headers: authHeaders(), credentials: 'include' });
         if (!res.ok) {
@@ -174,19 +226,39 @@ export async function fetchOrder(id: string): Promise<OrderResponse | null> {
         return data as OrderResponse;
     } catch (err) {
         console.warn('fetchOrder failed', err);
+
+        const isReachable = await getBackendStatus();
+        if (!isReachable) {
+            console.info('Backend is unreachable, using mock data for fetchOrder');
+            return MOCK_ORDER as OrderResponse;
+        }
+
         return null;
     }
 }
 
-// addBookToCart and other actions keep previous behavior (throw on error / use credentials)
 export async function addBookToCart(bookId: number, comment?: string) {
     if (FORCE_MOCK) return { order_id: MOCK_CART.draftId ?? null, book_id: bookId };
-    const res = await fetch(`${API_BASE}/ttr-calculation/cart/books`, {
-        method: 'POST',
-        headers: Object.assign(Object.fromEntries(authHeaders().entries()), { 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ book_id: bookId, comment: comment ?? '' }),
-        credentials: 'include',
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+
+    try {
+        const res = await fetch(`${API_BASE}/ttr-calculation/cart/books`, {
+            method: 'POST',
+            headers: Object.assign(Object.fromEntries(authHeaders().entries()), { 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ book_id: bookId, comment: comment ?? '' }),
+            credentials: 'include',
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        console.warn('addBookToCart failed', err);
+
+        const isReachable = await getBackendStatus();
+        if (!isReachable) {
+            console.info('Backend is unreachable, simulating success for addBookToCart');
+            // Возвращаем mock-ответ когда бэкенд недоступен
+            return { order_id: MOCK_CART.draftId ?? null, book_id: bookId };
+        }
+
+        throw err;
+    }
 }

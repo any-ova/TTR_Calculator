@@ -2,17 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import getImageUrl from '../services/image';
 
-/**
- * OrderPage - визуально повторяет серверный шаблон:
- * - header у вас уже в Header компоненте (fixed-top)
- * - внутри отображается секция заголовка заявки с form POST /update-order-title
- * - stats-table выводится в одну строчку (flex nowrap)
- * - список книг рендерится как в шаблоне: order-header + order-item
- *
- * Компонент получает данные через fetchOrder (в api.ts) — ожидается, что он возвращает
- * объект в виде { order: {...}, books: [...] } или совместимый формат.
- * Если backend не доступен, компонент корректно покажет "Заявка не найдена".
- */
 
 import { fetchOrder } from '../services/api';
 
@@ -68,7 +57,6 @@ const OrderPage: React.FC = () => {
         return <div style={{ padding: 20 }}>Загрузка...</div>;
     }
 
-    // If no order data — show message (same as серверный шаблон "Нет активных заказов")
     if (!data) {
         return (
             <div className="container-wrapper" style={{ paddingTop: 96 }}>
@@ -77,7 +65,6 @@ const OrderPage: React.FC = () => {
         );
     }
 
-    // Compute stats (compat with different field names)
     const totalWords = data.words ?? data.Words ?? data.TotalWords ?? 0;
     const totalUnique = data.unique_words ?? data.UniqueWords ?? data.TotalUniqueWords ?? 0;
     const ttr = data.ttr ?? data.TTR ?? data.TTRPercent ?? 0;
@@ -86,7 +73,7 @@ const OrderPage: React.FC = () => {
 
     return (
         <div className="container-wrapper" style={{ paddingTop: 96 }}>
-            {/* Title section — exact visual like template, POST form to /update-order-title */}
+            {}
             {data && (
                 <div className="order-title-section" style={{ margin: '20px 0', textAlign: 'center' }}>
                     <form action="/update-order-title" method="POST" style={{ display: 'inline-block' }}>
@@ -112,7 +99,7 @@ const OrderPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Stats table — forced single row via inline flex nowrap to guarantee one line */}
+            {}
             <div
                 className="stats-table"
                 style={{
@@ -137,7 +124,7 @@ const OrderPage: React.FC = () => {
                 <div style={{ textAlign: 'left', paddingLeft: '1rem' }}>{String(ttr)}%</div>
             </div>
 
-            {/* Header row (matching template) */}
+            {}
             <div className="order-header">
                 <span>Название</span>
                 <span>Слов всего</span>
@@ -146,7 +133,7 @@ const OrderPage: React.FC = () => {
                 <span>Комментарий</span>
             </div>
 
-            {/* Order books list — same markup as template */}
+            {}
             {books && books.length > 0 ? (
                 books.map((item: any, idx: number) => {
                     const book = item.book ?? {};
@@ -181,7 +168,7 @@ const OrderPage: React.FC = () => {
                 <p style={{ textAlign: 'center', fontSize: '1.6rem', margin: '3rem 0', color: '#777' }}>Нет активных заказов</p>
             )}
 
-            {/* Delete form like template */}
+            {}
             {data && (
                 <form action="/delete-order" method="POST" style={{ textAlign: 'center', margin: '2rem 0' }}>
                     <input type="hidden" name="order_id" value={orderId} />

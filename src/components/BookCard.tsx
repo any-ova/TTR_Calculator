@@ -13,10 +13,16 @@ const BookCard: React.FC<{ service: any }> = ({ service }) => {
     const id = service.ID ?? service.id ?? '';
 
     return (
-        <div className="books" style={{ boxSizing: 'border-box' }}>
+        <div className="book">
             <Link to={`/books/${id}`} className="book-link">
                 <div className="card-content">
-                    <img src={image} alt={title} />
+                    <div className="book-image-container">
+                        <img
+                            src={image}
+                            alt={title}
+                            className="book-image"
+                        />
+                    </div>
                     <p className="card-label">{title}</p>
                     <p className="card-label-au">{author}</p>
                     <p className="card-label">Количество уникальных слов</p>
@@ -26,7 +32,7 @@ const BookCard: React.FC<{ service: any }> = ({ service }) => {
                 </div>
             </Link>
 
-            <form action="/add-to-cart" method="POST" style={{ marginTop: 10, textAlign: 'center' }}>
+            <form action="/add-to-cart" method="POST">
                 <input type="hidden" name="book_id" value={id} />
                 <input type="hidden" name="comment" value="Добавлено в заявку" />
                 <button type="submit" className="add-to-cart-btn">Добавить в заявку</button>
