@@ -1,0 +1,3 @@
+body {
+    padding-top: 72px; /* чтобы контент не прятался под fixed-top navbar */
+}

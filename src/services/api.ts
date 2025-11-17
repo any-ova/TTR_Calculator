@@ -1,0 +1,188 @@
+// src/services/api.ts
+import { MOCK_BOOKS, MOCK_CART, MOCK_ORDER } from './mock';
+
+const API_BASE = (import.meta.env.VITE_API_BASE as string) || '/api';
+const MINIO_BASE = ((import.meta.env.VITE_MINIO_BASE as string) || '').replace(/\/$/, '');
+const FORCE_MOCK = (import.meta.env.VITE_FORCE_MOCK as string) === 'true';
+const DEFAULT_IMG = '/img/default-service.png';
+
+export type TemplateBook = {
+    ID: string;
+    Title: string;
+    Author?: string;
+    Description?: string;
+    ImageURL: string;
+    UniqueWords?: number;
+    Words?: number;
+    Price?: number | null;
+    DateFrom?: string | null;
+    DateTo?: string | null;
+};
+
+export type CartIcon = { cartCount: number; draftId: string | null; };
+export type OrderBookItem = { order_id: number; book_id: number; comment?: string; book: TemplateBook };
+export type OrderResponse = { order?: Record<string, any>; books?: OrderBookItem[] };
+
+function pick(obj: any, ...keys: string[]) {
+    if (!obj) return undefined;
+    for (const k of keys) {
+        if (Object.prototype.hasOwnProperty.call(obj, k) && obj[k] !== undefined && obj[k] !== null) return obj[k];
+    }
+    return undefined;
+}
+
+function mapApiBook(b: any): TemplateBook {
+    if (!b) {
+        return { ID: '', Title: 'Без названия', ImageURL: DEFAULT_IMG };
+    }
+
+    const id = String(pick(b, 'id', 'ID') ?? '');
+    const title = String(pick(b, 'title', 'Title') ?? '');
+    const author = String(pick(b, 'author', 'Author') ?? '');
+    const description = String(pick(b, 'description', 'Description') ?? '');
+    const uniqueWords = Number(pick(b, 'unique_words', 'UniqueWords', 'uniqueWords') ?? 0);
+    const words = Number(pick(b, 'words', 'Words') ?? 0);
+    const priceRaw = pick(b, 'price', 'Price');
+    const price = priceRaw !== undefined && priceRaw !== null ? Number(priceRaw) : null;
+    const dateFrom = pick(b, 'date_from', 'DateFrom', 'from') ?? null;
+    const dateTo = pick(b, 'date_to', 'DateTo', 'to') ?? null;
+
+    const imageUrl = pick(b, 'image_url', 'ImageURL', 'imageUrl');
+    const imageName = pick(b, 'image_name', 'ImageName', 'image_name', 'Image') ?? pick(b, 'image', 'image');
+
+    let image = DEFAULT_IMG;
+    if (imageUrl) {
+        image = String(imageUrl);
+    } else if (imageName && MINIO_BASE) {
+        image = `${MINIO_BASE}/${String(imageName).replace(/^\//, '')}`;
+    } else if (imageName) {
+        image = String(imageName);
+    }
+
+    return {
+        ID: id,
+        Title: title || 'Без названия',
+        Author: author || '',
+        Description: description || '',
+        ImageURL: image,
+        UniqueWords: uniqueWords,
+        Words: words,
+        Price: price,
+        DateFrom: dateFrom,
+        DateTo: dateTo,
+    };
+}
+
+function buildUrl(path: string, params: Record<string, string | number | undefined> = {}) {
+    const u = new URL(`${API_BASE}${path}`, window.location.origin);
+    Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && String(v) !== '') u.searchParams.set(k, String(v));
+    });
+    return u.toString();
+}
+
+// auth header helper (optional)
+function authHeaders(): Headers {
+    const headers = new Headers({ Accept: 'application/json' });
+    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    return headers;
+}
+
+export async function fetchBooks(params: {
+    title?: string;
+    author?: string;
+    from?: string;
+    to?: string;
+    minPrice?: number | string;
+    maxPrice?: number | string;
+    handle?: string;
+} = {}): Promise<TemplateBook[]> {
+    if (FORCE_MOCK) return MOCK_BOOKS.map(mapApiBook);
+
+    try {
+        const url = buildUrl('/books', {
+            title: params.title,
+            author: params.author,
+            from: params.from,
+            to: params.to,
+            minPrice: params.minPrice,
+            maxPrice: params.maxPrice,
+            handle: params.handle,
+        });
+        const res = await fetch(url, { headers: authHeaders() });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const arr = Array.isArray(data) ? data : data.items ?? data;
+        return arr.map(mapApiBook);
+    } catch (err) {
+        console.warn('fetchBooks fallback to mock', err);
+        return MOCK_BOOKS.map(mapApiBook);
+    }
+}
+
+export async function fetchBook(id: string): Promise<TemplateBook | null> {
+    if (FORCE_MOCK) {
+        const found = MOCK_BOOKS.find(b => String(pick(b, 'id')) === String(id));
+        return found ? mapApiBook(found) : null;
+    }
+    try {
+        const res = await fetch(`${API_BASE}/books/${id}`, { headers: authHeaders() });
+        if (res.status === 404) return null;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        return mapApiBook(data);
+    } catch (err) {
+        console.warn('fetchBook fallback to mock', err);
+        const found = MOCK_BOOKS.find(b => String(pick(b, 'id')) === String(id));
+        return found ? mapApiBook(found) : null;
+    }
+}
+
+export async function fetchCartIcon(): Promise<CartIcon> {
+    if (FORCE_MOCK) return { cartCount: MOCK_CART.cartCount, draftId: MOCK_CART.draftId };
+    try {
+        const res = await fetch(`${API_BASE}/ttr-calculation/cart-icon`, { headers: authHeaders(), credentials: 'include' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const count = Number(pick(data, 'count', 'Count', 'cart_count', 'cartCount') ?? 0);
+        const draftId = pick(data, 'order_id', 'orderId', 'draft_id', 'draftId') ?? null;
+        return { cartCount: count, draftId: draftId !== null ? String(draftId) : null };
+    } catch (err) {
+        console.warn('fetchCartIcon fallback to mock', err);
+        return { cartCount: MOCK_CART.cartCount, draftId: MOCK_CART.draftId };
+    }
+}
+
+export async function fetchOrder(id: string): Promise<OrderResponse | null> {
+    if (FORCE_MOCK) return MOCK_ORDER as any;
+    try {
+        const res = await fetch(`${API_BASE}/ttr-calculation/${id}`, { headers: authHeaders(), credentials: 'include' });
+        if (!res.ok) {
+            if (res.status === 404) return null;
+            throw new Error(`HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        if (data && Array.isArray(data.books)) {
+            data.books = data.books.map((it: any) => ({ ...it, book: mapApiBook(it.book || it.Book || it.book) }));
+        }
+        return data as OrderResponse;
+    } catch (err) {
+        console.warn('fetchOrder fallback to mock', err);
+        return MOCK_ORDER as any;
+    }
+}
+
+export async function addBookToCart(bookId: number, comment?: string) {
+    if (FORCE_MOCK) return { order_id: MOCK_CART.draftId ?? null, book_id: bookId };
+    const res = await fetch(`${API_BASE}/ttr-calculation/cart/books`, {
+        method: 'POST',
+        headers: Object.assign(Object.fromEntries(authHeaders().entries()), { 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ book_id: bookId, comment: comment ?? '' }),
+        credentials: 'include',
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+}
+
+// other order helpers omitted for brevity — implement similarly (updateBookInOrder, removeBookFromOrder, updateOrderTitle, submitOrder, deleteOrder)
