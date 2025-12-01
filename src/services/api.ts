@@ -116,11 +116,7 @@ async function getBackendStatus(): Promise<boolean> {
 export async function fetchBooks(params: {
     title?: string;
     author?: string;
-    from?: string;
-    to?: string;
-    minPrice?: number | string;
-    maxPrice?: number | string;
-    handle?: string;
+
 } = {}): Promise<TemplateBook[]> {
     if (FORCE_MOCK) return MOCK_BOOKS.map(mapApiBook);
 
@@ -128,11 +124,7 @@ export async function fetchBooks(params: {
         const url = buildUrl('/books', {
             title: params.title,
             author: params.author,
-            from: params.from,
-            to: params.to,
-            minPrice: params.minPrice,
-            maxPrice: params.maxPrice,
-            handle: params.handle,
+
         });
         const res = await fetch(url, { headers: authHeaders(), credentials: 'include' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -180,7 +172,7 @@ export async function fetchBook(id: string): Promise<TemplateBook | null> {
 }
 
 export async function fetchCartIcon(): Promise<CartIcon> {
-    if (FORCE_MOCK) return { cartCount: MOCK_CART.cartCount, draftId: MOCK_CART.draftId };
+    //if (FORCE_MOCK) return { cartCount: MOCK_CART.cartCount, draftId: MOCK_CART.draftId };
 
     try {
         const res = await fetch(`${API_BASE}/ttr-calculation/cart-icon`, { headers: authHeaders(), credentials: 'include' });

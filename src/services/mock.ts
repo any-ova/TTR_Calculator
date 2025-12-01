@@ -29,12 +29,12 @@ export const MOCK_BOOKS = [
 ];
 
 export const MOCK_CART = {
-    cartCount: 2,
-    draftId: 'draft-123',
+    cartCount: 0,
+    draftId: '1',
 };
 
 export const MOCK_ORDER = {
-    ID: 'draft-123',
+    ID: '1',
     Title: 'Моя заявка',
     TotalWords: 75678,
     TotalUniqueWords: 27653,

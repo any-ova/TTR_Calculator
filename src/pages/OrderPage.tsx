@@ -28,7 +28,6 @@ const OrderPage: React.FC = () => {
                     setData(null);
                     setBooks([]);
                 } else {
-                    // Normalize: backend may return { order: {...}, books: [...] }
                     const order = res.order ?? res.Order ?? res;
                     const booksRaw = res.books ?? res.Books ?? res.booksResp ?? [];
                     const normalized = Array.isArray(booksRaw)

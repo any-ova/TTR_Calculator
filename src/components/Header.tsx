@@ -10,7 +10,6 @@ const Header: React.FC = () => {
                 <nav style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <Link to="/" className="home-btn">Главная</Link>
                     <Link to="/books" style={{ textDecoration: 'none', color: '#000' }}>Книги</Link>
-                    <Link to="/ttr-calculation" style={{ textDecoration: 'none', color: '#000' }}>Расчёты</Link>
                 </nav>
             </div>
         </header>

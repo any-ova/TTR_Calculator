@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { fetchCartIcon } from '../services/api';
 
 const CartBubble: React.FC = () => {
+    const location = useLocation();
+
+    // Прячем "корзину" на главной странице (корень '/')
+    if (location.pathname === '/') {
+        return null;
+    }
+
     const [cartCount, setCartCount] = useState<number>(0);
     const [draftId, setDraftId] = useState<string | null>(null);
 

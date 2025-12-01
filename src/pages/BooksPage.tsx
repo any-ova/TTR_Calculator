@@ -68,18 +68,7 @@ const Books: React.FC = () => {
                         </Button>
 
                         {}
-                        <Button
-                            variant="outline-secondary"
-                            onClick={reset}
-                            className="ms-2"
-                            style={{
-                                fontSize: '1.3rem',
-                                padding: '0.6rem 1.2rem',
-                                borderRadius: '0.6rem'
-                            }}
-                        >
-                            Сброс
-                        </Button>
+
                     </Col>
                 </Row>
             </Form>

@@ -646,3 +646,120 @@ textarea { min-height: 80px; resize: vertical; }
 .breadcrumb .breadcrumb-item a:hover {
     color: #8accd2 !important; /* или любой другой цвет при наведении */
 }
+:root {
+    --header-height: 64px; /* при необходимости подкорректируйте под ваш header.fixed-top */
+}
+
+/* Корневой блок cover */
+.cover {
+    position: relative;
+    /* чтобы содержимое не перекрывалось хедером — добавляем отступ сверху */
+    padding-top: var(--header-height);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    background: #000; /* запасной фон если видео не загрузилось */
+    color: #fff;
+}
+
+/* Видео теперь фиксируется на весь экран и остаётся на фоне при скролле */
+.cover-video {
+    position: fixed; /* фиксируем относительно окна, чтобы покрывать всю страницу */
+    inset: 0;         /* top:0; right:0; bottom:0; left:0 */
+    z-index: 0;       /* ниже накладки и контента; header.fixed-top имеет z-index:10 */
+    overflow: hidden;
+    pointer-events: none; /* клики проходят к элементам выше */
+}
+
+/* Элемент видео растягиваем как cover */
+.cover-video-element {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: cover;
+    /* подкорректируйте фильтры для читаемости текста */
+    filter: brightness(0.55) saturate(0.95);
+}
+
+/* Накладка — фиксированная, чтобы иметь одинаковый контраст по всей странице */
+.cover-video-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.55) 100%);
+}
+
+/* Содержимое страницы поверх видео */
+.cover-content {
+    position: relative;
+    z-index: 2; /* выше видео и накладки */
+    width: 100%;
+    max-width: 1200px;
+    padding: 2rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+/* Текст по центру экрана */
+.cover-text {
+    color: #ffffff;
+    text-shadow: 0 6px 18px rgba(0,0,0,0.55);
+    max-width: 900px;
+}
+
+/* Заголовок и лид по вкусу */
+.cover-text h1 {
+    font-size: 3rem;
+    line-height: 1.05;
+    margin: 0 0 0.6rem 0;
+    font-weight: 700;
+    color: #fff;
+}
+
+.cover-text .lead {
+    font-size: 1.25rem;
+    color: #eaf6fb;
+    margin: 0 0 1.25rem 0;
+    line-height: 1.6;
+}
+
+/* Кнопки под текстом */
+.cover-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Адаптив */
+@media (max-width: 900px) {
+    .cover-text h1 { font-size: 2.25rem; }
+    .cover-text .lead { font-size: 1rem; }
+}
+
+@media (max-width: 420px) {
+    .cover {
+        padding-top: calc(var(--header-height) - 8px);
+        min-height: 72vh;
+    }
+    .cover-text h1 { font-size: 1.6rem; }
+    .cover-text .lead { font-size: 0.95rem; }
+}
+.no-scroll {
+    overflow: hidden !important;
+    height: 100vh !important;
+}
+
+/* Если вы хотите, чтобы это правило применялось только на мобильных/десктопе,
+   можно доработать через медиа-запросы. Остальные стили cover/video остаются как были. */
