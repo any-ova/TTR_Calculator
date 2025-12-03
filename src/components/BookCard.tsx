@@ -25,6 +25,7 @@ export function BookCard({ book }: BookCardProps) {
                         maxWidth: '100%',
                     }}
                     onError={(e) => {
+                        console.error(' Image load error for:', book.Title, 'URL:', imgUrl);
                         (e.target as HTMLImageElement).src = placeholder;
                     }}
                 />
@@ -50,11 +51,35 @@ export function BookCard({ book }: BookCardProps) {
                 <div className="mt-auto">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                         <small className="text-muted">Слов</small>
-                        <span className="badge bg-secondary">{book.Words}</span>
+                        <span
+                            className="badge"
+                            style={{
+                                backgroundColor: '#9ee7f0',
+                                color: '#000',
+                                fontWeight: 500,
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.875rem',
+                                borderRadius: '0.375rem',
+                            }}
+                        >
+                            {book.Words}
+                        </span>
                     </div>
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <small className="text-muted">Уникальных</small>
-                        <span className="badge bg-danger">{book.UniqueWords}</span>
+                        <span
+                            className="badge"
+                            style={{
+                                backgroundColor: '#e1426c',
+                                color: '#fff',
+                                fontWeight: 500,
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.875rem',
+                                borderRadius: '0.375rem',
+                            }}
+                        >
+                            {book.UniqueWords}
+                        </span>
                     </div>
 
                     <div className="d-grid gap-2">
