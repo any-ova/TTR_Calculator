@@ -6,8 +6,7 @@ import cartIcon from '../assets/cart.png';
 export function CartBubble() {
     const location = useLocation();
 
-    // Скрываем на главной
-    if (location.pathname === '/') {
+    if (location.pathname === '/TTR_Calculator/') {
         return null;
     }
 

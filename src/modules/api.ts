@@ -2,12 +2,13 @@ import type { Book } from '../lib/types';
 import { MOCK_BOOKS } from './mock';
 import placeholder from '../assets/placeholder.png';
 
-const API_BASE = '/api';
-const MINIO_URL = 'http://localhost:9000';
+const API_BASE = 'http://localhost:8080/api';
+const MINIO_URL = 'http://localhost:9000/services';
 
 export function resolveImageUrl(relativePath: string | null | undefined): string {
     // Если путь пустой, null, undefined — сразу placeholder
     if (!relativePath || relativePath.trim() === '') {
+
         return placeholder;
     }
 
@@ -42,7 +43,7 @@ export async function getBooks(title = '', author = ''): Promise<Book[]> {
             Description: b.Description ?? b.description ?? '',
             Words: b.Words ?? b.words ?? 0,
             UniqueWords: b.UniqueWords ?? b.unique_words ?? 0,
-            ImageURL: b.ImageURL ?? b.image_url ?? '',
+            ImageURL: b.ImageURL ?? b.ImageName ?? '',
         }));
     } catch {
         return MOCK_BOOKS.filter(b =>
@@ -64,7 +65,7 @@ export async function getBookById(id: number): Promise<Book> {
             Description: b.Description ?? b.description ?? '',
             Words: b.Words ?? b.words ?? 0,
             UniqueWords: b.UniqueWords ?? b.unique_words ?? 0,
-            ImageURL: resolveImageUrl(b.ImageURL ?? b.image_url ?? ''),
+            ImageURL: resolveImageUrl(b.ImageURL ?? b.ImageName ?? ''),
         };
     } catch {
         const mock = MOCK_BOOKS.find(b => b.id === id);

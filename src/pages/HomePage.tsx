@@ -3,12 +3,7 @@ import { Link } from 'react-router-dom';
 import homeVideo from '../assets/video.mp4'
 
 export function HomePage() {
-    useEffect(() => {
-        document.body.classList.add('no-scroll');
-        return () => {
-            document.body.classList.remove('no-scroll');
-        };
-    }, []);
+
 
     return (
         <div className="cover" aria-label="Вступительный блок — Палитра слов">
