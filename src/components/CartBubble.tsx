@@ -6,20 +6,21 @@ import cartIcon from '../assets/cart.png';
 export function CartBubble() {
     const location = useLocation();
 
-    // Скрываем на главной
-    if (location.pathname === '/') {
-        return null;
-    }
-
     const [cartCount, setCartCount] = useState(0);
     const [draftId, setDraftId] = useState<string | null>(null);
 
     useEffect(() => {
+        if (location.pathname === '/') return;
+
         getCartIcon().then(r => {
             setCartCount(r.cartCount || 0);
             setDraftId(r.draftId);
         });
-    }, []);
+    }, [location.pathname]);
+
+    if (location.pathname === '/') {
+        return null;
+    }
 
     if (cartCount > 0) {
         return (
