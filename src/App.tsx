@@ -20,6 +20,7 @@ export default function App() {
                     <Breadcrumbs />
                     <Routes>
                         <Route path="/TTR_Calculator/" element={<HomePage />} />
+                        <Route path="/" element={<HomePage />} />
                         <Route path="/books" element={<BooksPage />} />
                         <Route path="/books/:id" element={<BookDetailPage />} />
                         <Route path="/order/:id" element={<OrderPage />} />
