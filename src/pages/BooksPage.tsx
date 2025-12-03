@@ -1,96 +1,101 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Row, Col, Form, Button } from 'react-bootstrap';
-import { fetchBooks } from '../services/api';
-import BookCard from '../components/BookCard';
+import React, { useEffect, useState } from 'react';
+import { Container, Row, Col, Button, Spinner } from 'react-bootstrap';
+import { useDispatch, useSelector } from 'react-redux';
+import { BookCard } from '../components/BookCard';
+import { getBooks } from '../modules/api';
+import type { Book } from '../lib/types';
+import { setTitle, setAuthor, clearFilters } from '../features/filter/filterSlice';
+import type { RootState } from '../store';
 
-const Books: React.FC = () => {
-    const [title, setTitle] = useState('');
-    const [author, setAuthor] = useState('');
-    const [items, setItems] = useState<any[]>([]);
-    const [loading, setLoading] = useState(false);
+export function BooksPage() {
+    const dispatch = useDispatch();
+    const { title, author } = useSelector((state: RootState) => state.filter);
+    const [books, setBooks] = useState<Book[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const load = useCallback(async (params = {}) => {
+    const loadBooks = async (t = '', a = '') => {
         setLoading(true);
         try {
-            const res = await fetchBooks(params as any);
-            setItems(res || []);
+            const data = await getBooks(t, a);
+            setBooks(data);
         } finally {
             setLoading(false);
         }
-    }, []);
-
-    useEffect(() => { load(); }, [load]);
-
-    const apply = (e?: React.FormEvent) => {
-        e?.preventDefault();
-        const params: Record<string, string | number | undefined> = {
-            title: title || undefined,
-            author: author || undefined,
-        };
-        load(params);
     };
 
-    const reset = () => {
-        setTitle('');
-        setAuthor('');
-        load();
+    useEffect(() => {
+        loadBooks(title, author);
+    }, []);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        loadBooks(title, author);
+    };
+
+    const handleClear = () => {
+        dispatch(clearFilters());
+        loadBooks();
     };
 
     return (
-        <>
-            <h1 className="page-title">Книги / Услуги</h1>
+        <Container fluid="xxl" className="py-4">
+            <h1 className="page-title">Книги</h1>
 
-            <Form onSubmit={apply} className="mb-3">
-                <Row className="g-2 align-items-center">
-                    <Col md={3}>
-                        <Form.Control
+            {/* Поиск — без лупы, с кнопками "Найти" и "Очистить" */}
+            <form onSubmit={handleSearch} className="search-form mb-4">
+                <div className="search-container-wrapper">
+                    <div className="search-container">
+                        <input
+                            type="text"
+                            className="search-input"
                             placeholder="Название"
                             value={title}
-                            onChange={e => setTitle(e.target.value)}
+                            onChange={(e) => dispatch(setTitle(e.target.value))}
                         />
-                    </Col>
-                    <Col md={2}>
-                        <Form.Control
+                        <input
+                            type="text"
+                            className="search-input"
                             placeholder="Автор"
                             value={author}
-                            onChange={e => setAuthor(e.target.value)}
+                            onChange={(e) => dispatch(setAuthor(e.target.value))}
                         />
-                    </Col>
-                </Row>
-                <Row className="mt-2">
-                    <Col>
-                        {}
+                        <button type="submit" className="search-button">
+                            Найти
+                        </button>
+                    </div>
+                </div>
+
+                {(title || author) && (
+                    <div className="text-center mt-2">
                         <Button
-                            type="submit"
-                            className="me-2"
+                            type="button"
+                            variant="outline-secondary"
+                            onClick={handleClear}
+                            className="clear-filters-btn"
                         >
-                            Применить
+                            Очистить
                         </Button>
-
-                        {}
-
-                    </Col>
-                </Row>
-            </Form>
-
-            {loading && <div>Загрузка...</div>}
-
-            <div className="books-container">
-                {items.length ? items.map((it: any) => (
-                    <BookCard key={it.ID ?? it.id} service={it} />
-                )) : (
-                    <div style={{
-                        gridColumn: '1 / -1',
-                        textAlign: 'center',
-                        padding: '2rem 0',
-                        color: '#777'
-                    }}>
-                        Результатов нет
                     </div>
                 )}
-            </div>
-        </>
-    );
-};
+            </form>
 
-export default Books;
+            {loading ? (
+                <div className="text-center py-5">
+                    <Spinner animation="border" variant="primary" />
+                </div>
+            ) : books.length > 0 ? (
+                <Row xs={1} sm={2} md={3} lg={4} className="g-4">
+                    {books.map((book) => (
+                        <Col key={book.id}>
+                            <BookCard book={book} />
+                        </Col>
+                    ))}
+                </Row>
+            ) : (
+                <div className="text-center py-5 text-muted">
+                    Книг не найдено
+                </div>
+            )}
+        </Container>
+    );
+}

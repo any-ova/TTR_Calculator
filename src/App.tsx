@@ -1,30 +1,31 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
-import CartBubble from './components/CartBubble';
-import Home from './pages/Home';
-import BookDetailPage from './pages/BookDetailPage';
-import OrderPage from './pages/OrderPage';
-import Breadcrumbs from './components/Breadcrumbs';
-import Books from "./pages/BooksPage";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { store } from './store';
+import { Header } from './components/Header';
+import { CartBubble } from './components/CartBubble';
+import { Breadcrumbs } from './components/Breadcrumbs';
+import { HomePage } from './pages/HomePage';
+import { BooksPage } from './pages/BooksPage';
+import { BookDetailPage } from './pages/BookDetailPage';
+import { OrderPage } from './pages/OrderPage';
 
-const App: React.FC = () => {
+export default function App() {
     return (
-        <>
-            <Header />
-
-            <CartBubble />
-            <div style={{ paddingTop: 96 }} className="container-wrapper">
-                <Breadcrumbs />
-                <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/books" element={<Books />} />
-                    <Route path="/books/:id" element={<BookDetailPage />} />
-                    <Route path="/ttr-calculation/:id" element={<OrderPage />} />
-                </Routes>
-            </div>
-        </>
+        <Provider store={store}>
+            <BrowserRouter>
+                <Header />
+                <CartBubble />
+                <div className="container-wrapper">
+                    <Breadcrumbs />
+                    <Routes>
+                        <Route path="/" element={<HomePage />} />
+                        <Route path="/books" element={<BooksPage />} />
+                        <Route path="/books/:id" element={<BookDetailPage />} />
+                        <Route path="/order/:id" element={<OrderPage />} />
+                    </Routes>
+                </div>
+            </BrowserRouter>
+        </Provider>
     );
-};
-
-export default App;
+}

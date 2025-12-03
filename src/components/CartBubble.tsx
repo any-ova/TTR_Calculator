@@ -1,43 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { fetchCartIcon } from '../services/api';
+import { getCartIcon } from '../modules/api';
+import cartIcon from '../assets/cart.png';
 
-const CartBubble: React.FC = () => {
+export function CartBubble() {
     const location = useLocation();
 
-    // Прячем "корзину" на главной странице (корень '/')
+    // Скрываем на главной
     if (location.pathname === '/') {
         return null;
     }
 
-    const [cartCount, setCartCount] = useState<number>(0);
+    const [cartCount, setCartCount] = useState(0);
     const [draftId, setDraftId] = useState<string | null>(null);
 
     useEffect(() => {
-        let mounted = true;
-        fetchCartIcon().then(r => {
-            if (!mounted) return;
+        getCartIcon().then(r => {
             setCartCount(r.cartCount || 0);
-            setDraftId(r.draftId || null);
+            setDraftId(r.draftId);
         });
-        return () => { mounted = false; };
     }, []);
 
-    return (
-        <>
-            {cartCount > 0 ? (
-                <a href={`/order/${draftId ?? ''}`} className="bubble-btn" aria-label="Корзина">
-                    <img src="/img/cart.png" alt="Корзина" className="cart-icon" />
-                    <span className="bubble-count">{cartCount}</span>
-                </a>
-            ) : (
-                <div className="bubble-btn disabled" aria-hidden>
-                    <img src="/img/cart.png" alt="Корзина" className="cart-icon" />
-                    <span className="bubble-count">0</span>
-                </div>
-            )}
-        </>
-    );
-};
+    if (cartCount > 0) {
+        return (
+            <a
+                href={`/order/${draftId ?? ''}`}
+                className="bubble-btn"
+                aria-label="Корзина"
+            >
+                <img src={cartIcon} alt="Корзина" className="cart-icon" />
+                <span className="bubble-count">{cartCount}</span>
+            </a>
+        );
+    }
 
-export default CartBubble;
+    return (
+        <div className="bubble-btn disabled" aria-hidden>
+            <img src={cartIcon} alt="Корзина" className="cart-icon" />
+            <span className="bubble-count">0</span>
+        </div>
+    );
+}
