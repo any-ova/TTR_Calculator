@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import homeVideo from '../assets/video.mp4'
 
 export function HomePage() {
     useEffect(() => {
@@ -20,7 +21,7 @@ export function HomePage() {
                     preload="metadata"
                     className="cover-video-element"
                 >
-                    <source src="/img/video.mp4" type="video/mp4" />
+                    <source src={homeVideo} type="video/mp4" />
                     Ваш браузер не поддерживает фоновое видео.
                 </video>
                 <div className="cover-video-overlay" />
