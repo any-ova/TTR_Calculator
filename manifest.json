@@ -1,0 +1,20 @@
+{
+  "name": "Палитра слов",
+  "short_name": "Палитра",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0d6efd",
+  "icons": [
+    {
+      "src": "img/placeholder.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "img/placeholder.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
