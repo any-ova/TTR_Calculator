@@ -7,3 +7,8 @@ export interface Book {
     UniqueWords: number;
     ImageURL: string;
 }
+
+export interface CartSummary {
+    order_id: string;
+    count: number;
+}

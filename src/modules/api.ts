@@ -1,5 +1,5 @@
-import type { Book } from '../lib/types';
-import { MOCK_BOOKS } from './mock';
+import type {Book, CartSummary} from '../lib/types';
+import {MOCK_BOOKS, MOCK_CART} from './mock';
 import placeholder from '../assets/placeholder.png';
 
 const API_BASE = '/api';
@@ -83,16 +83,21 @@ export async function getBookById(id: number): Promise<Book> {
     }
 }
 
-export async function getCartIcon(): Promise<{ cartCount: number; draftId: string | null }> {
+export async function getCart(): Promise<CartSummary> {
     try {
-        const res = await fetch(`${API_BASE}/ttr-calculation/cart-icon`);
-        if (!res.ok) return { cartCount: 0, draftId: null };
-        const data = await res.json();
-        return {
-            cartCount: data.cartCount ?? data.count ?? 0,
-            draftId: data.draftId ?? data.orderId ?? null,
-        };
-    } catch {
-        return { cartCount: 0, draftId: null };
+        const res = await fetch(`${API_BASE}/cart`, {
+            headers: {},
+        });
+
+        if (!res.ok) {
+            throw new Error(`Cart request failed with status ${res.status}`);
+        }
+
+        const data = (await res.json()) as CartSummary;
+        console.log('cart response', data);
+        return data;
+    } catch (e) {
+        console.error('cart fallback to mock', e);
+        return MOCK_CART;
     }
 }

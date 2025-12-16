@@ -1,4 +1,4 @@
-import type { Book } from '../lib/types';
+import type {Book, CartSummary} from '../lib/types';
 import book1 from '../assets/book1.png'; // TODO: поменять картинки книг на настоящие
 import book2 from '../assets/book2.png';
 import book3 from '../assets/book3.png';
@@ -32,3 +32,8 @@ export const MOCK_BOOKS: Book[] = [
         ImageURL: book3,
     },
 ];
+
+export const MOCK_CART: CartSummary = {
+    order_id: "-1",
+    count: 0,
+};
