@@ -40,30 +40,28 @@ export function BookDetailPage() {
         );
     }
 
-    const imgUrl = resolveImageUrl(book.ImageURL);
-
     return (
         <div className="container-wrapper" style={{ paddingTop: '2rem' }}>
             <div className="book-detail-card" style={{ textAlign: 'center' }}>
                 <div className="book-detail-image">
                     <img
-                        src={imgUrl}
-                        alt={book.Title}
-                        onError={(e) => {
-                            (e.target as HTMLImageElement).src = placeholder;
-                        }}
-                        style={{
-                            width: '100%',
-                            maxWidth: '280px',
-                            height: 'auto',
-                            display: 'block',
-                            margin: '0 auto',
-                            borderRadius: '0.6rem',
-                            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                        }}
-                    />
-                </div>
-                <div className="book-detail-content">
+                        src={book.ImageName}
+                     alt={book.Title}
+                     onError={(e) => {
+                         (e.target as HTMLImageElement).src = placeholder;
+                     }}
+                     style={{
+                         width: '100%',
+                         maxWidth: '280px',
+                         height: 'auto',
+                         display: 'block',
+                         margin: '0 auto',
+                         borderRadius: '0.6rem',
+                         boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                     }}
+                />
+            </div>
+            <div className="book-detail-content">
                     <h1 className="book-detail-title">{book.Title}</h1>
                     <p className="book-detail-author">Автор: <strong>{book.Author}</strong></p>
                     <div className="book-detail-stats">

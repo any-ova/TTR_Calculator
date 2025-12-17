@@ -2,28 +2,15 @@ import type { Book } from '../lib/types';
 import { MOCK_BOOKS } from './mock';
 import placeholder from '../assets/placeholder.png';
 
-const API_BASE = '/api';
-const MINIO_URL = 'http://localhost:9000';
+const API_BASE = 'http://192.168.1.72:3000/api';
+const MINIO_URL = 'http://192.168.1.72:3000/services';
 
 export function resolveImageUrl(relativePath: string | null | undefined): string {
     // Если путь пустой, null, undefined — сразу placeholder
-    if (!relativePath || relativePath.trim() === '') {
+    if (!relativePath) {
         return placeholder;
     }
-
-    // Если это абсолютный путь (начинается с /) — это НЕ относительный путь к MinIO!
-    // Это путь к public/, и его не надо проксировать через MINIO_URL
-    if (relativePath.startsWith('/')) {
-        return relativePath; // например: "/img/book1.jpg"
-    }
-
-    // Если это http(s) — оставляем как есть
-    if (relativePath.startsWith('http')) {
-        return relativePath;
-    }
-
-    // Иначе — считаем, что это имя файла в MinIO
-    return `${MINIO_URL}/${relativePath.replace(/^\//, '')}`;
+    return `${MINIO_URL}/${relativePath}`;
 }
 
 export async function getBooks(title = '', author = ''): Promise<Book[]> {
@@ -42,7 +29,7 @@ export async function getBooks(title = '', author = ''): Promise<Book[]> {
             Description: b.Description ?? b.description ?? '',
             Words: b.Words ?? b.words ?? 0,
             UniqueWords: b.UniqueWords ?? b.unique_words ?? 0,
-            ImageURL: b.ImageURL ?? b.image_url ?? '',
+            ImageName: resolveImageUrl(b.ImageName),
         }));
     } catch {
         return MOCK_BOOKS.filter(b =>
@@ -51,6 +38,7 @@ export async function getBooks(title = '', author = ''): Promise<Book[]> {
         );
     }
 }
+
 
 export async function getBookById(id: number): Promise<Book> {
     try {
@@ -64,7 +52,7 @@ export async function getBookById(id: number): Promise<Book> {
             Description: b.Description ?? b.description ?? '',
             Words: b.Words ?? b.words ?? 0,
             UniqueWords: b.UniqueWords ?? b.unique_words ?? 0,
-            ImageURL: resolveImageUrl(b.ImageURL ?? b.image_url ?? ''),
+            ImageName: resolveImageUrl(b.ImageName),
         };
     } catch {
         const mock = MOCK_BOOKS.find(b => b.id === id);
@@ -76,7 +64,7 @@ export async function getBookById(id: number): Promise<Book> {
             Description: '',
             Words: 0,
             UniqueWords: 0,
-            ImageURL: '',
+            ImageName: '',
         };
     }
 }

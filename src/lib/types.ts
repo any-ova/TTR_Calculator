@@ -5,5 +5,5 @@ export interface Book {
     Description: string;
     Words: number;
     UniqueWords: number;
-    ImageURL: string;
+    ImageName: string;
 }

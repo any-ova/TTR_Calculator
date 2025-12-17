@@ -10,14 +10,13 @@ interface BookCardProps {
 }
 
 export function BookCard({ book }: BookCardProps) {
-    const imgUrl = resolveImageUrl(book.ImageURL);
 
     return (
         <Card className="h-100 shadow-sm" style={{ borderRadius: '0.8rem' }}>
             <div className="d-flex justify-content-center align-items-center p-3" style={{ height: '220px' }}>
                 <Card.Img
                     variant="top"
-                    src={imgUrl}
+                    src={book.ImageName}
                     alt={book.Title}
                     style={{
                         objectFit: 'contain',
