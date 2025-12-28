@@ -69,22 +69,7 @@ export function BookCard({ book }: BookCardProps) {
                         >
                             Подробнее
                         </Link>
-                        <form action="/add-to-cart" method="POST" className="mt-1">
-                            <input type="hidden" name="book_id" value={book.id} />
-                            <input type="hidden" name="comment" value="Добавлено в заявку" />
-                            <button
-                                type="submit"
-                                className="btn w-100"
-                                style={{
-                                    backgroundColor: '#e1426c',
-                                    borderColor: '#e1426c',
-                                    color: '#fff',
-                                    fontWeight: 600,
-                                }}
-                            >
-                                Добавить в заявку
-                            </button>
-                        </form>
+                        
                     </div>
                 </div>
             </Card.Body>

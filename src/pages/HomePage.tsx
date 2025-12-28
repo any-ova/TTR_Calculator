@@ -4,9 +4,7 @@ import homeVideo from '../assets/video.mp4'
 
 export function HomePage() {
     useEffect(() => {
-        document.body.classList.add('no-scroll');
         return () => {
-            document.body.classList.remove('no-scroll');
         };
     }, []);
 
